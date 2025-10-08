@@ -1,1 +1,0 @@
-web: gunicorn kisan_project.wsgi:application --log-file -
