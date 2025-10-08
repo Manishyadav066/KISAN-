@@ -1,0 +1,397 @@
+{% extends 'kisan_app/base.html' %}
+
+{% block title %}Advanced Weather Dashboard - Kisan Project{% endblock %}
+
+{% block content %}
+<h2 style="color: #667eea; margin-bottom: 30px; font-size: 2.5em; text-align: center;">🌤️ Advanced Weather Dashboard
+</h2>
+
+<!-- Weather Summary Cards -->
+<div class="stats-grid" style="margin-bottom: 40px;">
+    {% for weather in weather_data|slice:":4" %}
+    <div class="stat-card"
+        style="background: {% if weather.weather_condition == 'Sunny' %}linear-gradient(135deg, #ffd54f, #ff8f00){% elif weather.weather_condition == 'Rainy' %}linear-gradient(135deg, #42a5f5, #1e88e5){% elif weather.weather_condition == 'Cloudy' %}linear-gradient(135deg, #90a4ae, #607d8b){% elif weather.weather_condition == 'Overcast' %}linear-gradient(135deg, #78909c, #546e7a){% elif weather.weather_condition == 'Partly Cloudy' %}linear-gradient(135deg, #81c784, #4caf50){% else %}linear-gradient(135deg, #667eea, #764ba2){% endif %};">
+        <h3>📍 {{ weather.location }}</h3>
+        <div class="number">{{ weather.temperature }}°C</div>
+        <p>{{ weather.weather_condition }}</p>
+        <small style="opacity: 0.8;">{{ weather.date_recorded|date:"M d, H:i" }}</small>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Location Filter and Controls -->
+<div class="card" style="margin-bottom: 30px;">
+    <div
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <h3 style="color: #2c5530; margin: 0;">🌍 Weather by Location</h3>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <select id="locationFilter" onchange="filterByLocation()" title="Select location to filter weather data"
+                style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                <option value="all">All Locations</option>
+                {% for location in locations %}
+                <option value="{{ location }}">{{ location }}</option>
+                {% endfor %}
+            </select>
+            <button onclick="refreshWeather()"
+                style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                🔄 Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Organized Weather Cards by Location -->
+<div id="weatherContainer">
+    {% regroup weather_data by location as location_list %}
+    {% for location in location_list %}
+    <div class="location-group" data-location="{{ location.grouper }}" style="margin-bottom: 40px;">
+
+        <!-- Location Header -->
+        <div
+            style="background: linear-gradient(135deg, #2c5530 0%, #4a7c59 100%); color: white; padding: 20px; border-radius: 15px 15px 0 0; margin-bottom: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1.5em;">🌍 {{ location.grouper }} Weather History</h3>
+                    <p style="margin: 5px 0 0 0; opacity: 0.9;">{{ location.list|length }} records available</p>
+                </div>
+                <div style="text-align: right;">
+                    {% with latest=location.list.0 %}
+                    <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px;">
+                        <strong style="font-size: 1.2em;">{{ latest.temperature }}°C</strong><br>
+                        <small>{{ latest.weather_condition }}</small>
+                    </div>
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Weather Cards for this Location -->
+        <div
+            style="background: white; border-radius: 0 0 15px 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                {% for weather in location.list|slice:":6" %}
+                <div class="weather-card"
+                    style="border: 2px solid #f0f0f0; border-radius: 12px; padding: 20px; transition: all 0.3s ease; position: relative; overflow: hidden; background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);"
+                    onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='0 20px 40px rgba(0,0,0,0.15)'; this.style.borderColor='#667eea'"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 15px rgba(0,0,0,0.08)'; this.style.borderColor='#f0f0f0'">
+
+                    <!-- Weather Icon Background -->
+                    <div
+                        style="position: absolute; top: -15px; right: -15px; font-size: 5em; opacity: 0.08; transform: rotate(15deg);">
+                        {% if weather.weather_condition == 'Sunny' %}☀️
+                        {% elif weather.weather_condition == 'Rainy' %}🌧️
+                        {% elif weather.weather_condition == 'Cloudy' %}☁️
+                        {% elif weather.weather_condition == 'Overcast' %}☁️
+                        {% elif weather.weather_condition == 'Partly Cloudy' %}⛅
+                        {% else %}🌤️{% endif %}
+                    </div>
+
+                    <!-- Weather Status Badge -->
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <span
+                            style="background: {% if weather.weather_condition == 'Sunny' %}linear-gradient(135deg, #ffd54f, #ff8f00){% elif weather.weather_condition == 'Rainy' %}linear-gradient(135deg, #42a5f5, #1e88e5){% elif weather.weather_condition == 'Cloudy' %}linear-gradient(135deg, #90a4ae, #607d8b){% elif weather.weather_condition == 'Overcast' %}linear-gradient(135deg, #78909c, #546e7a){% elif weather.weather_condition == 'Partly Cloudy' %}linear-gradient(135deg, #81c784, #4caf50){% else %}linear-gradient(135deg, #667eea, #764ba2){% endif %}; color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.9em; font-weight: 600; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                            {{ weather.weather_condition }}
+                        </span>
+                        <div style="text-align: right;">
+                            <strong style="color: #2c5530; font-size: 0.9em;">{{ weather.date_recorded|date:"M d"
+                                }}</strong><br>
+                            <small style="color: #666;">{{ weather.date_recorded|date:"H:i" }}</small>
+                        </div>
+                    </div>
+
+                    <!-- Main Temperature Display -->
+                    <div
+                        style="text-align: center; margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-radius: 10px;">
+                        <div style="font-size: 2.5em; margin-bottom: 5px;">🌡️</div>
+                        <h2 style="margin: 0; color: #1976d2; font-size: 2.5em;">{{ weather.temperature }}°C</h2>
+                        <p style="margin: 5px 0 0 0; color: #1976d2; font-weight: 600;">
+                            {% if weather.temperature > 35 %}Very Hot
+                            {% elif weather.temperature > 30 %}Hot
+                            {% elif weather.temperature > 25 %}Warm
+                            {% elif weather.temperature > 15 %}Cool
+                            {% else %}Cold{% endif %}
+                        </p>
+                    </div>
+
+                    <!-- Weather Metrics Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
+                        <div
+                            style="text-align: center; padding: 15px; background: linear-gradient(135deg, #e8f5e8, #c8e6c9); border-radius: 10px;">
+                            <div style="font-size: 1.8em; margin-bottom: 8px;">💧</div>
+                            <strong style="color: #388e3c; font-size: 1.3em;">{{ weather.humidity }}%</strong>
+                            <p style="margin: 0; color: #388e3c; font-size: 0.85em; font-weight: 600;">Humidity</p>
+                        </div>
+
+                        <div
+                            style="text-align: center; padding: 15px; background: linear-gradient(135deg, #fff3e0, #ffcc02); border-radius: 10px;">
+                            <div style="font-size: 1.8em; margin-bottom: 8px;">🌧️</div>
+                            <strong style="color: #f57c00; font-size: 1.3em;">{{ weather.rainfall }}mm</strong>
+                            <p style="margin: 0; color: #f57c00; font-size: 0.85em; font-weight: 600;">Rainfall</p>
+                        </div>
+                    </div>
+
+                    <!-- Weather Quality Indicator -->
+                    <div
+                        style="margin-bottom: 15px; padding: 12px; border-radius: 8px; {% if weather.temperature <= 35 and weather.humidity >= 40 and weather.humidity <= 70 %}background: linear-gradient(135deg, #e8f5e8, #c8e6c9); border-left: 4px solid #4caf50;{% elif weather.temperature > 35 or weather.humidity < 30 %}background: linear-gradient(135deg, #ffebee, #ffcdd2); border-left: 4px solid #f44336;{% else %}background: linear-gradient(135deg, #fff3e0, #ffe0b2); border-left: 4px solid #ff9800;{% endif %}">
+                        <p
+                            style="margin: 0; font-size: 0.9em; font-weight: 600;{% if weather.temperature <= 35 and weather.humidity >= 40 and weather.humidity <= 70 %} color: #2e7d32;{% elif weather.temperature > 35 or weather.humidity < 30 %} color: #c62828;{% else %} color: #e65100;{% endif %}">
+                            {% if weather.temperature <= 35 and weather.humidity >= 40 and weather.humidity <= 70 %} ✅
+                                    Excellent farming conditions {% elif weather.temperature > 35 or weather.humidity <
+                                        30 %} ⚠️ Challenging conditions - Take precautions {% else %} ℹ️ Moderate
+                                        conditions - Monitor closely {% endif %} </p>
+                    </div>
+
+                    <!-- Smart Farming Tip -->
+                    <div
+                        style="padding: 12px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 8px; border-left: 3px solid #667eea;">
+                        <p style="margin: 0; font-size: 0.85em; color: #495057;">
+                            <strong style="color: #667eea;">💡 Smart Tip:</strong>
+                            {% if weather.weather_condition == 'Sunny' and weather.temperature > 30 %}
+                            High temperature detected! Increase irrigation frequency and provide shade for sensitive
+                            crops
+                            {% elif weather.weather_condition == 'Rainy' and weather.rainfall > 20 %}
+                            Heavy rainfall! Ensure proper field drainage and protect harvested crops
+                            {% elif weather.humidity > 80 %}
+                            High humidity! Monitor crops for fungal diseases and improve air circulation
+                            {% elif weather.humidity < 40 %} Low humidity! Increase irrigation and consider misting for
+                                sensitive plants {% elif weather.weather_condition == 'Cloudy' %} Great conditions for
+                                transplanting and field work activities {% else %} Good weather for regular farming
+                                activities and crop monitoring {% endif %} </p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if location.list|length > 6 %}
+            <div style="text-align: center; margin-top: 25px;">
+                <button onclick="loadMoreWeather('{{ location.grouper }}')"
+                    style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: 600; font-size: 0.9em; transition: all 0.3s ease;"
+                    onmouseover="this.style.transform='translateY(-2px)'"
+                    onmouseout="this.style.transform='translateY(0)'">
+                    📊 View All {{ location.list|length }} Records for {{ location.grouper }}
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Weather Insights and Farming Tips -->
+<div class="card" style="margin-top: 30px;">
+    <h3 style="color: #2c5530; margin-bottom: 25px; text-align: center;">🌱 Advanced Weather-Based Farming Guide</h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px;">
+
+        <!-- Sunny Weather Guide -->
+        <div
+            style="border-left: 5px solid #ffd54f; background: linear-gradient(135deg, #fffef7, #fff8e1); padding: 25px; border-radius: 0 15px 15px 0; box-shadow: 0 5px 15px rgba(255, 213, 79, 0.2);">
+            <h4 style="color: #f57c00; margin-bottom: 15px; font-size: 1.2em;">☀️ Sunny Weather Strategy</h4>
+            <ul style="margin: 0; padding-left: 20px; color: #6d4c41;">
+                <li style="margin-bottom: 8px;">Perfect for harvesting and crop drying operations</li>
+                <li style="margin-bottom: 8px;">Increase irrigation frequency, especially for shallow-rooted crops</li>
+                <li style="margin-bottom: 8px;">Monitor soil moisture levels every 6-8 hours</li>
+                <li style="margin-bottom: 8px;">Apply mulching to conserve soil moisture</li>
+                <li style="margin-bottom: 8px;">Schedule early morning or evening field work</li>
+            </ul>
+        </div>
+
+        <!-- Rainy Weather Guide -->
+        <div
+            style="border-left: 5px solid #42a5f5; background: linear-gradient(135deg, #f3f9ff, #e3f2fd); padding: 25px; border-radius: 0 15px 15px 0; box-shadow: 0 5px 15px rgba(66, 165, 245, 0.2);">
+            <h4 style="color: #1976d2; margin-bottom: 15px; font-size: 1.2em;">🌧️ Rainy Weather Management</h4>
+            <ul style="margin: 0; padding-left: 20px; color: #1565c0;">
+                <li style="margin-bottom: 8px;">Ensure proper drainage systems are functional</li>
+                <li style="margin-bottom: 8px;">Avoid heavy machinery to prevent soil compaction</li>
+                <li style="margin-bottom: 8px;">Increase pest and disease monitoring frequency</li>
+                <li style="margin-bottom: 8px;">Protect stored and harvested crops from moisture</li>
+                <li style="margin-bottom: 8px;">Plan indoor maintenance and preparation activities</li>
+            </ul>
+        </div>
+
+        <!-- High Humidity Guide -->
+        <div
+            style="border-left: 5px solid #81c784; background: linear-gradient(135deg, #f1f8e9, #e8f5e8); padding: 25px; border-radius: 0 15px 15px 0; box-shadow: 0 5px 15px rgba(129, 199, 132, 0.2);">
+            <h4 style="color: #388e3c; margin-bottom: 15px; font-size: 1.2em;">💨 Humidity Management</h4>
+            <ul style="margin: 0; padding-left: 20px; color: #2e7d32;">
+                <li style="margin-bottom: 8px;">Monitor for fungal diseases in high humidity (>80%)</li>
+                <li style="margin-bottom: 8px;">Improve air circulation around plant canopies</li>
+                <li style="margin-bottom: 8px;">Reduce irrigation frequency in low humidity (&lt;40%)</li>
+                <li style="margin-bottom: 8px;">Apply preventive fungicide treatments when needed</li>
+                <li style="margin-bottom: 8px;">Adjust harvesting schedules based on humidity levels</li>
+            </ul>
+        </div>
+
+        <!-- Temperature Management -->
+        <div
+            style="border-left: 5px solid #ff7043; background: linear-gradient(135deg, #fff3e0, #ffe0b2); padding: 25px; border-radius: 0 15px 15px 0; box-shadow: 0 5px 15px rgba(255, 112, 67, 0.2);">
+            <h4 style="color: #d84315; margin-bottom: 15px; font-size: 1.2em;">🌡️ Temperature Control</h4>
+            <ul style="margin: 0; padding-left: 20px; color: #bf360c;">
+                <li style="margin-bottom: 8px;">Provide shade nets for crops in extreme heat (>35°C)</li>
+                <li style="margin-bottom: 8px;">Use frost protection measures in cold weather (&lt;10°C)</li>
+                <li style="margin-bottom: 8px;">Adjust planting schedules according to temperature forecasts</li>
+                <li style="margin-bottom: 8px;">Monitor plant stress indicators during temperature extremes</li>
+                <li style="margin-bottom: 8px;">Implement cooling systems for sensitive crops</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Weather Alerts -->
+<div class="card" style="margin-top: 30px;">
+    <h3 style="color: #dc3545; margin-bottom: 25px; text-align: center;">⚠️ Smart Weather Alerts System</h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+
+        <!-- Dynamic alerts based on current weather data -->
+        {% for weather in weather_data|slice:":3" %}
+        {% if weather.temperature > 35 %}
+        <div
+            style="background: linear-gradient(135deg, #ffeb3b, #ff9800); color: #333; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 8px 16px rgba(255, 152, 0, 0.3);">
+            <div style="font-size: 2.5em; margin-bottom: 12px;">🌡️</div>
+            <h4 style="margin: 0 0 12px 0; font-size: 1.1em;">High Temperature Alert</h4>
+            <p style="margin: 0; font-size: 0.9em; line-height: 1.4;"><strong>{{ weather.location }}:</strong> {{
+                weather.temperature }}°C detected. Increase irrigation and provide shade protection.</p>
+        </div>
+        {% endif %}
+
+        {% if weather.rainfall > 25 %}
+        <div
+            style="background: linear-gradient(135deg, #2196f3, #3f51b5); color: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 8px 16px rgba(63, 81, 181, 0.3);">
+            <div style="font-size: 2.5em; margin-bottom: 12px;">🌊</div>
+            <h4 style="margin: 0 0 12px 0; font-size: 1.1em;">Heavy Rainfall Alert</h4>
+            <p style="margin: 0; font-size: 0.9em; line-height: 1.4;"><strong>{{ weather.location }}:</strong> {{
+                weather.rainfall }}mm rainfall recorded. Check drainage systems immediately.</p>
+        </div>
+        {% endif %}
+
+        {% if weather.humidity < 30 %} <div
+            style="background: linear-gradient(135deg, #ff7043, #d84315); color: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 8px 16px rgba(216, 67, 21, 0.3);">
+            <div style="font-size: 2.5em; margin-bottom: 12px;">💨</div>
+            <h4 style="margin: 0 0 12px 0; font-size: 1.1em;">Low Humidity Alert</h4>
+            <p style="margin: 0; font-size: 0.9em; line-height: 1.4;"><strong>{{ weather.location }}:</strong> {{
+                weather.humidity }}% humidity. Monitor plant stress and increase irrigation.</p>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    <!-- Default alerts if no specific conditions are met -->
+    {% if not weather_data %}
+    <div
+        style="background: linear-gradient(135deg, #81c784, #4caf50); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+        <div style="font-size: 2.5em; margin-bottom: 12px;">✅</div>
+        <h4 style="margin: 0 0 12px 0;">All Clear</h4>
+        <p style="margin: 0; font-size: 0.9em;">No weather alerts at this time. Continue with regular farming
+            activities.</p>
+    </div>
+    {% endif %}
+</div>
+</div>
+
+<style>
+    .weather-card {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    }
+
+    .weather-card:hover {
+        animation: weatherCardPulse 0.6s ease;
+    }
+
+    @keyframes weatherCardPulse {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.02);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .location-group {
+        animation: slideInUp 0.6s ease;
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Enhanced animations for weather cards
+        const locationGroups = document.querySelectorAll('.location-group');
+        locationGroups.forEach((group, index) => {
+            group.style.opacity = '0';
+            group.style.transform = 'translateY(30px)';
+            setTimeout(() => {
+                group.style.transition = 'all 0.8s ease';
+                group.style.opacity = '1';
+                group.style.transform = 'translateY(0)';
+            }, index * 200);
+        });
+
+        // Location filter functionality
+        window.filterByLocation = function () {
+            const selectedLocation = document.getElementById('locationFilter').value;
+            const locationGroups = document.querySelectorAll('.location-group');
+
+            locationGroups.forEach(group => {
+                if (selectedLocation === 'all' || group.dataset.location === selectedLocation) {
+                    group.style.display = 'block';
+                    group.style.animation = 'slideInUp 0.6s ease';
+                } else {
+                    group.style.display = 'none';
+                }
+            });
+        };
+
+        // Refresh weather data
+        window.refreshWeather = function () {
+            const button = event.target;
+            button.innerHTML = '🔄 Refreshing...';
+            button.disabled = true;
+
+            // Simulate refresh
+            setTimeout(() => {
+                button.innerHTML = '✅ Updated!';
+                setTimeout(() => {
+                    button.innerHTML = '🔄 Refresh';
+                    button.disabled = false;
+                }, 1000);
+            }, 1500);
+        };
+
+        // Load more weather data
+        window.loadMoreWeather = function (location) {
+            alert(`Loading all weather records for ${location}...\\n\\nThis feature would typically load more detailed historical data and charts.`);
+        };
+
+        // Auto-refresh weather data every 5 minutes
+        setInterval(() => {
+            console.log('Auto-refreshing weather data...');
+            // In a real application, you would fetch updated weather data here
+        }, 300000);
+
+        // Add weather quality indicators with animations
+        const weatherCards = document.querySelectorAll('.weather-card');
+        weatherCards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.animation = 'slideInUp 0.6s ease';
+            }, index * 100);
+        });
+    });
+</script>
+{% endblock %}

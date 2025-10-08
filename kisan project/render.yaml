@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: kisan-project
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn kisan_project.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: your-app-name.onrender.com
+
+databases:
+  - name: kisan-db
+    databaseName: kisan_db
+    user: kisan_user
